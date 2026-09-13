@@ -1,2 +1,1 @@
-# OT-ASSIGNMENT-1
-This repository contains the complete Python source code and execution outputs for OT Assignment 1. The project implements two distinct Operations Research solvers from scratch: a Big-M Simplex method calculator for LPP and a Transportation Problem optimizer using VAM and MODI.
+Python implementations of two classic Operations Research algorithms. The Big-M Simplex Method solves linear programming problems by introducing slack, surplus, and artificial variables to handle mixed constraints and find optimal decision variables with maximum objective value. The transportation solver uses Vogel's Approximation Method (VAM) to generate an initial feasible solution, then refines it to optimality with the Modified Distribution (MODI) method.
