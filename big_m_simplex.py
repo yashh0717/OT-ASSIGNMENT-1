@@ -2,7 +2,6 @@ import numpy as np
 
 
 def solve_furniture_lp(M=1e4):
-    # Coefficients: 2 variables (T, C), 2 slack (<=), 3 surplus (>=), 3 artificial, 1 RHS
     # Order: [T, C, s1, s2, e1, e2, e3, a1, a2, a3, RHS]
     constraints = [
         [2, 1,  1, 0,  0,  0,  0, 0, 0, 0, 100],  # Cutting <= 100
@@ -23,8 +22,11 @@ def solve_furniture_lp(M=1e4):
         z_row -= M * tab[r]
     tab = np.vstack([tab, z_row])
 
+    status = "Optimal"
+    iterations = 0
+
     # Simplex loop
-    for _ in range(50):
+    for it in range(1, 51):
         rc = tab[-1, :-1]
         if np.min(rc) >= -1e-5:
             break
@@ -36,7 +38,7 @@ def solve_furniture_lp(M=1e4):
         ratios = [rhs[i] / col[i] if col[i] > 1e-6 else np.inf for i in range(m)]
 
         if min(ratios) == np.inf:
-            return None
+            return {"status": "Unbounded", "iterations": it, "tables": 0.0, "chairs": 0.0, "profit": 0.0}
 
         p_row = int(np.argmin(ratios))
 
@@ -46,13 +48,21 @@ def solve_furniture_lp(M=1e4):
                 tab[i] -= tab[i, p_col] * tab[p_row]
 
         basis[p_row] = p_col
+        iterations = it
 
-    # Solution read-out
+    # Check if artificial variables (indices 7, 8, 9) remain in basis with positive value
+    for r, b in enumerate(basis):
+        if b in (7, 8, 9) and tab[r, -1] > 1e-4:
+            status = "Infeasible"
+            break
+
     sol = np.zeros(tab.shape[1] - 1)
     for r, b in enumerate(basis):
         sol[b] = tab[r, -1]
 
     return {
+        "status": status,
+        "iterations": iterations,
         "tables": sol[0],
         "chairs": sol[1],
         "profit": tab[-1, -1]
@@ -62,9 +72,11 @@ def solve_furniture_lp(M=1e4):
 if __name__ == "__main__":
     res = solve_furniture_lp()
 
-    if res:
+    print(f"Status       : {res['status']}")
+    print(f"Iterations   : {res['iterations']}")
+    if res["status"] == "Optimal":
         print(f"Make Tables  : {res['tables']:.1f}")
         print(f"Make Chairs  : {res['chairs']:.1f}")
         print(f"Total Profit : ${res['profit']:,.2f}")
     else:
-        print("Infeasible or unbounded problem.")
+        print("No feasible production plan found.")
